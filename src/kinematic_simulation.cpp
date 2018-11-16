@@ -44,10 +44,16 @@ bool KinematicSimulation::init()
     return false;
   }
 
+  reset_server_ = nh_.advertiseService("/state_reset", &KinematicSimulation::resetSrv, this);
   command_sub_ = nh_.subscribe("/joint_command", 1, &KinematicSimulation::jointCommandCb, this);
   state_pub_ = nh_.advertise<sensor_msgs::JointState>("/robot/joint_states", 1);
 
   return true;
+}
+
+bool KinematicSimulation::resetSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+{
+  return reset();
 }
 
 void KinematicSimulation::jointCommandCb(const sensor_msgs::JointStateConstPtr &msg)

@@ -3,6 +3,7 @@
 
 #include <ros/ros.h>
 #include <urdf/model.h>
+#include <std_srvs/Empty.h>
 #include <sensor_msgs/JointState.h>
 
 ptrdiff_t findInVector(const std::vector<std::string> &v, const std::string &x)
@@ -32,6 +33,7 @@ private:
   ros::NodeHandle nh_;
   ros::Subscriber command_sub_;
   ros::Publisher state_pub_;
+  ros::ServiceServer reset_server_;
   std::vector<std::string> joint_names_;
   std::vector<double> joint_positions_;
   std::vector<double> joint_velocities_;
@@ -46,6 +48,11 @@ private:
     Resets simulation to a pre-defined state.
   **/
   bool reset();
+
+  /**
+    Implements a service to reset the simulation status.
+  **/
+  bool resetSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
   /**
     Acquire most recent joint velocity commands.
