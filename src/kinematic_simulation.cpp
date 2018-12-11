@@ -24,7 +24,8 @@ bool KinematicSimulation::init()
   for (unsigned int i = 0; i < links.size(); i++)
   {
     ROS_DEBUG_STREAM("Parsing link " << links[i]->name);
-    if (links[i]->parent_joint && links[i]->parent_joint->type != urdf::Joint::FIXED)
+    if (links[i]->parent_joint &&
+        links[i]->parent_joint->type != urdf::Joint::FIXED)
     {
       ROS_INFO_STREAM("Adding joint: " << links[i]->parent_joint->name);
       joint_names_.push_back(links[i]->parent_joint->name);
@@ -44,19 +45,23 @@ bool KinematicSimulation::init()
     return false;
   }
 
-  reset_server_ = nh_.advertiseService("/state_reset", &KinematicSimulation::resetSrv, this);
-  command_sub_ = nh_.subscribe("/joint_command", 1, &KinematicSimulation::jointCommandCb, this);
+  reset_server_ = nh_.advertiseService("/state_reset",
+                                       &KinematicSimulation::resetSrv, this);
+  command_sub_ = nh_.subscribe("/joint_command", 1,
+                               &KinematicSimulation::jointCommandCb, this);
   state_pub_ = nh_.advertise<sensor_msgs::JointState>("/robot/joint_states", 1);
 
   return true;
 }
 
-bool KinematicSimulation::resetSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res)
+bool KinematicSimulation::resetSrv(std_srvs::Empty::Request &req,
+                                   std_srvs::Empty::Response &res)
 {
   return reset();
 }
 
-void KinematicSimulation::jointCommandCb(const sensor_msgs::JointStateConstPtr &msg)
+void KinematicSimulation::jointCommandCb(
+    const sensor_msgs::JointStateConstPtr &msg)
 {
   for (unsigned int i = 0; i < msg->name.size(); i++)
   {
@@ -80,7 +85,7 @@ void KinematicSimulation::run()
     for (unsigned int i = 0; i < joint_names_.size(); i++)
     {
       dt = (ros::Time::now() - prev_time);
-      joint_positions_[i] += joint_velocities_[i]*dt.toSec();
+      joint_positions_[i] += joint_velocities_[i] * dt.toSec();
       cmd.name.push_back(joint_names_[i]);
       cmd.position.push_back(joint_positions_[i]);
       cmd.velocity.push_back(joint_velocities_[i]);

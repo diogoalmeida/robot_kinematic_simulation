@@ -2,9 +2,9 @@
 #define __KINEMATIC_SIMULATION__
 
 #include <ros/ros.h>
-#include <urdf/model.h>
-#include <std_srvs/Empty.h>
 #include <sensor_msgs/JointState.h>
+#include <std_srvs/Empty.h>
+#include <urdf/model.h>
 
 ptrdiff_t findInVector(const std::vector<std::string> &v, const std::string &x)
 {
@@ -21,7 +21,7 @@ ptrdiff_t findInVector(const std::vector<std::string> &v, const std::string &x)
 **/
 class KinematicSimulation
 {
-public:
+ public:
   KinematicSimulation();
 
   /**
@@ -29,7 +29,7 @@ public:
   **/
   void run();
 
-private:
+ private:
   ros::NodeHandle nh_;
   ros::Subscriber command_sub_;
   ros::Publisher state_pub_;
@@ -40,7 +40,8 @@ private:
   double rate_;
 
   /**
-    Loads the URDF model and sets up the list of valid joint names. Loads pre-defined joint values.
+    Loads the URDF model and sets up the list of valid joint names. Loads
+  pre-defined joint values.
   **/
   bool init();
 
