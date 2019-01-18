@@ -5,6 +5,8 @@
 #include <sensor_msgs/JointState.h>
 #include <std_srvs/Empty.h>
 #include <urdf/model.h>
+#include <mutex>
+#include <thread>
 
 ptrdiff_t findInVector(const std::vector<std::string> &v, const std::string &x)
 {
@@ -37,6 +39,8 @@ class KinematicSimulation
   std::vector<std::string> joint_names_;
   std::vector<double> joint_positions_;
   std::vector<double> joint_velocities_;
+  std::unique_ptr<std::thread> run_thread_;
+  std::mutex mtx_;
   double rate_;
 
   /**
@@ -49,6 +53,11 @@ class KinematicSimulation
     Resets simulation to a pre-defined state.
   **/
   bool reset();
+
+  /**
+    Simulation execution.
+  **/
+  void exec();
 
   /**
     Implements a service to reset the simulation status.

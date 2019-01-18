@@ -51,13 +51,17 @@ bool KinematicSimulation::init()
                                &KinematicSimulation::jointCommandCb, this);
   state_pub_ = nh_.advertise<sensor_msgs::JointState>("/robot/joint_states", 1);
 
+  ROS_INFO("Kinematic simulation initialized successfully");
   return true;
 }
 
 bool KinematicSimulation::resetSrv(std_srvs::Empty::Request &req,
                                    std_srvs::Empty::Response &res)
 {
-  return reset();
+  bool ret = reset();
+  ROS_WARN("Resetting kinematic simulation");
+  ros::Duration(0.2).sleep();  // wait for TF to catch up to simulation...
+  return ret;
 }
 
 void KinematicSimulation::jointCommandCb(
@@ -75,27 +79,37 @@ void KinematicSimulation::jointCommandCb(
 
 void KinematicSimulation::run()
 {
+  run_thread_ = std::unique_ptr<std::thread>(
+      new std::thread(&KinematicSimulation::exec, this));
+  ros::spin();
+}
+
+void KinematicSimulation::exec()
+{
   ros::Rate r(rate_);
   ros::Time prev_time = ros::Time::now();
   ros::Duration dt;
 
   while (ros::ok())
   {
-    sensor_msgs::JointState cmd;
-    for (unsigned int i = 0; i < joint_names_.size(); i++)
     {
-      dt = (ros::Time::now() - prev_time);
-      joint_positions_[i] += joint_velocities_[i] * dt.toSec();
-      cmd.name.push_back(joint_names_[i]);
-      cmd.position.push_back(joint_positions_[i]);
-      cmd.velocity.push_back(joint_velocities_[i]);
-      cmd.effort.push_back(0.0);
+      std::lock_guard<std::mutex> guard(mtx_);
+      sensor_msgs::JointState cmd;
+      for (unsigned int i = 0; i < joint_names_.size(); i++)
+      {
+        dt = (ros::Time::now() - prev_time);
+        joint_positions_[i] += joint_velocities_[i] * dt.toSec();
+        cmd.name.push_back(joint_names_[i]);
+        cmd.position.push_back(joint_positions_[i]);
+        cmd.velocity.push_back(joint_velocities_[i]);
+        cmd.effort.push_back(0.0);
+      }
+
+      cmd.header.stamp = ros::Time::now();
+      state_pub_.publish(cmd);
+      prev_time = ros::Time::now();
     }
 
-    cmd.header.stamp = ros::Time::now();
-    state_pub_.publish(cmd);
-    ros::spinOnce();
-    prev_time = ros::Time::now();
     r.sleep();
   }
 }
@@ -123,6 +137,7 @@ bool KinematicSimulation::reset()
     return false;
   }
 
+  mtx_.lock();
   for (unsigned int i = 0; i < names.size(); i++)
   {
     ptrdiff_t idx = findInVector(joint_names_, names[i]);
@@ -132,6 +147,7 @@ bool KinematicSimulation::reset()
       joint_velocities_[idx] = 0.0;
     }
   }
+  mtx_.unlock();
 
   return true;
 }
