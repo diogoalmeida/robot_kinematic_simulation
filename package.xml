@@ -13,4 +13,5 @@
   <depend>roscpp</depend>
   <depend>urdf</depend>
   <depend>sensor_msgs</depend>
+  <depend>rosgraph_msgs</depend>
 </package>

@@ -1,6 +1,6 @@
 #include <robot_kinematic_simulation/kinematic_simulation.hpp>
 
-KinematicSimulation::KinematicSimulation() : nh_("~")
+KinematicSimulation::KinematicSimulation() : nh_("~"), curr_time_(0.0)
 {
   if (!init())
   {
@@ -34,12 +34,6 @@ bool KinematicSimulation::init()
     }
   }
 
-  if (!nh_.getParam("sim_rate", rate_))
-  {
-    ROS_ERROR("Missing sim_rate parameter");
-    return false;
-  }
-
   if (!reset())
   {
     return false;
@@ -50,6 +44,7 @@ bool KinematicSimulation::init()
   command_sub_ = nh_.subscribe("/joint_command", 1,
                                &KinematicSimulation::jointCommandCb, this);
   state_pub_ = nh_.advertise<sensor_msgs::JointState>("/robot/joint_states", 1);
+  clock_pub_ = nh_.advertise<rosgraph_msgs::Clock>("/clock", 1);
 
   ROS_INFO("Kinematic simulation initialized successfully");
   return true;
@@ -67,6 +62,7 @@ bool KinematicSimulation::resetSrv(std_srvs::Empty::Request &req,
 void KinematicSimulation::jointCommandCb(
     const sensor_msgs::JointStateConstPtr &msg)
 {
+  std::lock_guard<std::mutex> guard(mtx_);
   for (unsigned int i = 0; i < msg->name.size(); i++)
   {
     ptrdiff_t idx = findInVector(joint_names_, msg->name[i]);
@@ -86,9 +82,8 @@ void KinematicSimulation::run()
 
 void KinematicSimulation::exec()
 {
-  ros::Rate r(rate_);
-  ros::Time prev_time = ros::Time::now();
-  ros::Duration dt;
+  ros::WallRate r(sim_scale_ * rate_);
+  rosgraph_msgs::Clock clock_msg;
 
   while (ros::ok())
   {
@@ -97,17 +92,18 @@ void KinematicSimulation::exec()
       sensor_msgs::JointState cmd;
       for (unsigned int i = 0; i < joint_names_.size(); i++)
       {
-        dt = (ros::Time::now() - prev_time);
-        joint_positions_[i] += joint_velocities_[i] * dt.toSec();
+        joint_positions_[i] += joint_velocities_[i] * 1.0 / rate_;
         cmd.name.push_back(joint_names_[i]);
         cmd.position.push_back(joint_positions_[i]);
         cmd.velocity.push_back(joint_velocities_[i]);
         cmd.effort.push_back(0.0);
       }
 
-      cmd.header.stamp = ros::Time::now();
+      curr_time_ += 1.0 / rate_;
+      clock_msg.clock = ros::Time(curr_time_);
+      cmd.header.stamp = ros::Time(curr_time_);
       state_pub_.publish(cmd);
-      prev_time = ros::Time::now();
+      clock_pub_.publish(clock_msg);
     }
 
     r.sleep();
@@ -136,6 +132,21 @@ bool KinematicSimulation::reset()
     ROS_ERROR("Incoherent joint names and joint positions sizes");
     return false;
   }
+
+  if (!nh_.getParam("sim_rate", rate_))
+  {
+    ROS_ERROR("Missing sim_rate parameter");
+    return false;
+  }
+
+  double rt_rate;
+  if (!nh_.getParam("realtime_rate", rt_rate))
+  {
+    ROS_ERROR("Missing sim_rate parameter");
+    return false;
+  }
+
+  sim_scale_ = rt_rate / rate_;
 
   mtx_.lock();
   for (unsigned int i = 0; i < names.size(); i++)

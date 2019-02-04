@@ -5,6 +5,7 @@ find_package(
   catkin REQUIRED COMPONENTS
   roscpp
   urdf
+  rosgraph_msgs
   sensor_msgs
 )
 
@@ -12,7 +13,7 @@ add_definitions(-std=c++11)
 link_directories(${catkin_LIBRARY_DIRS})
 
 catkin_package(
-  CATKIN_DEPENDS roscpp urdf sensor_msgs
+CATKIN_DEPENDS roscpp urdf sensor_msgs rosgraph_msgs
 )
 
 include_directories(
