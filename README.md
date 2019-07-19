@@ -7,6 +7,8 @@ dynamics.
 This makes for a less resource intensive simulation for users that only care about
 robot kinematics.
 
+Depends on the [generic_control_toolbox](https://github.com/diogoalmeida/generic_control_toolbox) package.
+
 The simulation accepts a `sensor_msgs/JointState` message as a command.
 Joint velocities from the command message are taken as input to the simulation.
 
@@ -26,5 +28,5 @@ than ``sim_rate`` to get a faster simulation. If your computer struggles to run 
   * ``\joint_positions``: the initial joint positions of the simulated robot.
 
   An example configuration file is provided in the ``config`` directory, which is
-  loaded in the ``sim.launch`` launch file. These make use of the Rething Robotics' 
+  loaded in the ``sim.launch`` launch file. These make use of the Rething Robotics'
   Baxter description to run, which you can get from [here](https://github.com/RethinkRobotics/baxter_common).
