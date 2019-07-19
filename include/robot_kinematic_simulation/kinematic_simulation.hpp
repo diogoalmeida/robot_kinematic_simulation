@@ -4,10 +4,7 @@
 #include <ros/ros.h>
 #include <rosgraph_msgs/Clock.h>
 #include <sensor_msgs/JointState.h>
-#include <std_srvs/Empty.h>
 #include <urdf/model.h>
-#include <mutex>
-#include <thread>
 
 ptrdiff_t findInVector(const std::vector<std::string> &v, const std::string &x)
 {
@@ -37,6 +34,8 @@ class KinematicSimulation
   **/
   bool reset();
 
+  sensor_msgs::JointState getState() const { return state_; }
+
   void update(const std::vector<double> &velocities);
 
  private:
@@ -44,6 +43,7 @@ class KinematicSimulation
   ros::Publisher state_pub_, clock_pub_;
   std::vector<std::string> joint_names_;
   std::vector<double> joint_positions_;
+  sensor_msgs::JointState state_;
   double sim_rate_, curr_time_;
 
   /**

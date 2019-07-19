@@ -55,21 +55,21 @@ void KinematicSimulation::update(const std::vector<double> &velocities)
         velocities.size(), joint_names_.size());
   }
   rosgraph_msgs::Clock clock_msg;
-  sensor_msgs::JointState cmd;
+  state_ = sensor_msgs::JointState();
 
   for (unsigned int i = 0; i < joint_names_.size(); i++)
   {
     joint_positions_[i] += velocities[i] / sim_rate_;
-    cmd.name.push_back(joint_names_[i]);
-    cmd.position.push_back(joint_positions_[i]);
-    cmd.velocity.push_back(velocities[i]);
-    cmd.effort.push_back(0.0);
+    state_.name.push_back(joint_names_[i]);
+    state_.position.push_back(joint_positions_[i]);
+    state_.velocity.push_back(velocities[i]);
+    state_.effort.push_back(0.0);
   }
 
   curr_time_ += 1.0 / sim_rate_;
   clock_msg.clock = ros::Time(curr_time_);
-  cmd.header.stamp = ros::Time(curr_time_);
-  state_pub_.publish(cmd);
+  state_.header.stamp = ros::Time(curr_time_);
+  state_pub_.publish(state_);
   clock_pub_.publish(clock_msg);
 }
 
@@ -109,6 +109,15 @@ bool KinematicSimulation::reset()
     {
       joint_positions_[idx] = positions[i];
     }
+  }
+
+  state_ = sensor_msgs::JointState();
+  for (unsigned int i = 0; i < joint_names_.size(); i++)
+  {
+    state_.name.push_back(joint_names_[i]);
+    state_.position.push_back(joint_positions_[i]);
+    state_.velocity.push_back(0.0);
+    state_.effort.push_back(0.0);
   }
 
   return true;

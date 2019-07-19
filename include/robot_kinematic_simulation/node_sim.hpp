@@ -1,6 +1,8 @@
 #ifndef __NODE_SIMULATION__
 #define __NODE_SIMULATION__
 
+#include <ros/ros.h>
+#include <std_srvs/Empty.h>
 #include <robot_kinematic_simulation/kinematic_simulation.hpp>
 
 /**
