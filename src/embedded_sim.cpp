@@ -13,13 +13,12 @@ EmbeddedSimulator::EmbeddedSimulator(
 
 bool EmbeddedSimulator::init()
 {
-  std::vector<std::string> names;
   if (!sim_.reset())
   {
     return false;
   }
 
-  if (!nh_.getParam("init/joint_names", names))
+  if (!nh_.getParam("init/joint_names", joint_names_))
   {
     ROS_ERROR("Missing init/joint_names parameter");
     return false;
@@ -28,6 +27,12 @@ bool EmbeddedSimulator::init()
   if (!nh_.getParam("compute_rate", compute_rate_))
   {
     ROS_ERROR("Missing compute_rate");
+    return false;
+  }
+
+  if (!nh_.getParam("sim_rate", sim_rate_))
+  {
+    ROS_ERROR("Missing sim_rate");
     return false;
   }
 
@@ -47,35 +52,25 @@ bool EmbeddedSimulator::resetSrv(std_srvs::Empty::Request &req,
 void EmbeddedSimulator::run()
 {
   ros::Time prev_time;
-  ros::Rate r(compute_rate_);
   sensor_msgs::JointState command;
+  ros::AsyncSpinner spinner(4);
+  spinner.start();
 
-  prev_time = ros::Time::now();
   while (ros::ok())
   {
     if (controller_->isActive())
     {
-      std::vector<double> joint_velocities(7, 0.0);
       command = controller_->updateControl(sim_.getState(),
-                                           ros::Time::now() - prev_time);
+                                           ros::Duration(1 / sim_rate_));
+      std::vector<double> joint_velocities(command.name.size(), 0.0);
       for (unsigned int i = 0; i < command.name.size(); i++)
       {
-        ptrdiff_t idx = findInVector(joint_names_, command.name[i]);
-        if (idx != -1)
-        {
-          joint_velocities[idx] = command.velocity[i];
-        }
+        joint_velocities[i] = command.velocity[i];
       }
 
       sim_.update(joint_velocities);
-      prev_time = ros::Time::now();
-      ros::spinOnce();
-      r.sleep();
     }
-    else
-    {
-      std::this_thread::sleep_for(
-          std::chrono::milliseconds((int)(1000 / compute_rate_)));
-    }
+
+    ros::WallDuration(1 / compute_rate_).sleep();
   }
 }

@@ -23,7 +23,7 @@ class EmbeddedSimulator
   std::shared_ptr<generic_control_toolbox::ControllerBase> controller_;
   ros::ServiceServer reset_server_;
   ros::NodeHandle nh_;
-  double compute_rate_;
+  double compute_rate_, sim_rate_;
   std::vector<std::string> joint_names_;
   KinematicSimulation sim_;
 

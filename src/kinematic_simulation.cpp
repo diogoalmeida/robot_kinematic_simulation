@@ -33,13 +33,18 @@ bool KinematicSimulation::init()
     }
   }
 
+  state_pub_ = nh_.advertise<sensor_msgs::JointState>("/robot/joint_states", 1);
+  clock_pub_ = nh_.advertise<rosgraph_msgs::Clock>("/clock", 1);
+
+  curr_time_ = 0.0;
+  rosgraph_msgs::Clock clock_msg;
+  clock_msg.clock = ros::Time(curr_time_);
+  clock_pub_.publish(clock_msg);
+
   if (!reset())
   {
     return false;
   }
-
-  state_pub_ = nh_.advertise<sensor_msgs::JointState>("/robot/joint_states", 1);
-  clock_pub_ = nh_.advertise<rosgraph_msgs::Clock>("/clock", 1);
 
   ROS_INFO("Kinematic simulation initialized successfully");
   return true;

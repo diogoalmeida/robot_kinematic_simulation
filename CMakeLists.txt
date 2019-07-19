@@ -16,7 +16,7 @@ link_directories(${catkin_LIBRARY_DIRS})
 catkin_package(
   CATKIN_DEPENDS roscpp urdf sensor_msgs rosgraph_msgs generic_control_toolbox
   INCLUDE_DIRS include
-  LIBRARIES kinematic_simulation
+  LIBRARIES kinematic_simulation embedded_simulation
 )
 
 include_directories(
