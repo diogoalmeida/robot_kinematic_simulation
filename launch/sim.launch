@@ -2,11 +2,11 @@
   <arg name="debug" default="false"/>
   <param name="use_sim_time" type="bool" value="true" />
 
-  <node if="$(arg debug)" pkg="robot_kinematic_simulation" type="kinematic_simulation" name="robot_kinematic_simulation" output="screen" launch-prefix="xterm -e gdb --args">
+  <node if="$(arg debug)" pkg="robot_kinematic_simulation" type="kinematic_simulation_node" name="robot_kinematic_simulation" output="screen" launch-prefix="xterm -e gdb --args">
     <rosparam command="load" file="$(find robot_kinematic_simulation)/config/params.yaml"/>
   </node>
 
-  <node unless="$(arg debug)" name="robot_kinematic_simulation" type="kinematic_simulation" pkg="robot_kinematic_simulation" output="screen">
+  <node unless="$(arg debug)" name="robot_kinematic_simulation" type="kinematic_simulation_node" pkg="robot_kinematic_simulation" output="screen">
     <rosparam command="load" file="$(find robot_kinematic_simulation)/config/params.yaml"/>
   </node>
 

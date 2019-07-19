@@ -32,42 +32,24 @@ class KinematicSimulation
   **/
   void run();
 
+  /**
+  Resets simulation to a pre-defined state.
+  **/
+  bool reset();
+
+  void update(const std::vector<double> &velocities);
+
  private:
   ros::NodeHandle nh_;
-  ros::Subscriber command_sub_;
   ros::Publisher state_pub_, clock_pub_;
-  ros::ServiceServer reset_server_;
   std::vector<std::string> joint_names_;
   std::vector<double> joint_positions_;
-  std::vector<double> joint_velocities_;
-  std::unique_ptr<std::thread> run_thread_;
-  std::mutex mtx_;
-  double rate_, curr_time_, sim_scale_;
+  double sim_rate_, curr_time_;
 
   /**
     Loads the URDF model and sets up the list of valid joint names. Loads
   pre-defined joint values.
   **/
   bool init();
-
-  /**
-    Resets simulation to a pre-defined state.
-  **/
-  bool reset();
-
-  /**
-    Simulation execution.
-  **/
-  void exec();
-
-  /**
-    Implements a service to reset the simulation status.
-  **/
-  bool resetSrv(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
-
-  /**
-    Acquire most recent joint velocity commands.
-  **/
-  void jointCommandCb(const sensor_msgs::JointStateConstPtr &msg);
 };
 #endif

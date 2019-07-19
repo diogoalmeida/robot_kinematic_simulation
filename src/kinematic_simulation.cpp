@@ -30,7 +30,6 @@ bool KinematicSimulation::init()
       ROS_INFO_STREAM("Adding joint: " << links[i]->parent_joint->name);
       joint_names_.push_back(links[i]->parent_joint->name);
       joint_positions_.push_back(0.0);
-      joint_velocities_.push_back(0.0);
     }
   }
 
@@ -39,10 +38,6 @@ bool KinematicSimulation::init()
     return false;
   }
 
-  reset_server_ = nh_.advertiseService("/state_reset",
-                                       &KinematicSimulation::resetSrv, this);
-  command_sub_ = nh_.subscribe("/joint_command", 1,
-                               &KinematicSimulation::jointCommandCb, this);
   state_pub_ = nh_.advertise<sensor_msgs::JointState>("/robot/joint_states", 1);
   clock_pub_ = nh_.advertise<rosgraph_msgs::Clock>("/clock", 1);
 
@@ -50,64 +45,32 @@ bool KinematicSimulation::init()
   return true;
 }
 
-bool KinematicSimulation::resetSrv(std_srvs::Empty::Request &req,
-                                   std_srvs::Empty::Response &res)
+void KinematicSimulation::update(const std::vector<double> &velocities)
 {
-  bool ret = reset();
-  ROS_WARN("Resetting kinematic simulation");
-  ros::Duration(0.2).sleep();  // wait for TF to catch up to simulation...
-  return ret;
-}
-
-void KinematicSimulation::jointCommandCb(
-    const sensor_msgs::JointStateConstPtr &msg)
-{
-  std::lock_guard<std::mutex> guard(mtx_);
-  for (unsigned int i = 0; i < msg->name.size(); i++)
+  if (velocities.size() != joint_names_.size())
   {
-    ptrdiff_t idx = findInVector(joint_names_, msg->name[i]);
-    if (idx != -1)
-    {
-      joint_velocities_[idx] = msg->velocity[i];
-    }
+    ROS_ERROR(
+        "Kinematic simulation got velocity command of incorrect size (%d vs "
+        "%d)",
+        velocities.size(), joint_names_.size());
   }
-}
-
-void KinematicSimulation::run()
-{
-  run_thread_ = std::unique_ptr<std::thread>(
-      new std::thread(&KinematicSimulation::exec, this));
-  ros::spin();
-}
-
-void KinematicSimulation::exec()
-{
-  ros::WallRate r(sim_scale_ * rate_);
   rosgraph_msgs::Clock clock_msg;
+  sensor_msgs::JointState cmd;
 
-  while (ros::ok())
+  for (unsigned int i = 0; i < joint_names_.size(); i++)
   {
-    {
-      std::lock_guard<std::mutex> guard(mtx_);
-      sensor_msgs::JointState cmd;
-      for (unsigned int i = 0; i < joint_names_.size(); i++)
-      {
-        joint_positions_[i] += joint_velocities_[i] * 1.0 / rate_;
-        cmd.name.push_back(joint_names_[i]);
-        cmd.position.push_back(joint_positions_[i]);
-        cmd.velocity.push_back(joint_velocities_[i]);
-        cmd.effort.push_back(0.0);
-      }
-
-      curr_time_ += 1.0 / rate_;
-      clock_msg.clock = ros::Time(curr_time_);
-      cmd.header.stamp = ros::Time(curr_time_);
-      state_pub_.publish(cmd);
-      clock_pub_.publish(clock_msg);
-    }
-
-    r.sleep();
+    joint_positions_[i] += velocities[i] / sim_rate_;
+    cmd.name.push_back(joint_names_[i]);
+    cmd.position.push_back(joint_positions_[i]);
+    cmd.velocity.push_back(velocities[i]);
+    cmd.effort.push_back(0.0);
   }
+
+  curr_time_ += 1.0 / sim_rate_;
+  clock_msg.clock = ros::Time(curr_time_);
+  cmd.header.stamp = ros::Time(curr_time_);
+  state_pub_.publish(cmd);
+  clock_pub_.publish(clock_msg);
 }
 
 bool KinematicSimulation::reset()
@@ -133,40 +96,20 @@ bool KinematicSimulation::reset()
     return false;
   }
 
-  if (!nh_.getParam("sim_rate", rate_))
+  if (!nh_.getParam("sim_rate", sim_rate_))
   {
     ROS_ERROR("Missing sim_rate parameter");
     return false;
   }
 
-  double rt_rate;
-  if (!nh_.getParam("realtime_rate", rt_rate))
-  {
-    ROS_ERROR("Missing sim_rate parameter");
-    return false;
-  }
-
-  sim_scale_ = rt_rate / rate_;
-
-  mtx_.lock();
   for (unsigned int i = 0; i < names.size(); i++)
   {
     ptrdiff_t idx = findInVector(joint_names_, names[i]);
     if (idx != -1)
     {
       joint_positions_[idx] = positions[i];
-      joint_velocities_[idx] = 0.0;
     }
   }
-  mtx_.unlock();
 
   return true;
-}
-
-int main(int argc, char **argv)
-{
-  ros::init(argc, argv, "kinematic_simulation");
-  KinematicSimulation sim;
-  sim.run();
-  return 0;
 }
