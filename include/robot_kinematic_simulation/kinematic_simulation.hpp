@@ -35,6 +35,7 @@ class KinematicSimulation
   bool reset();
 
   sensor_msgs::JointState getState() const { return state_; }
+  std::vector<std::string> getJointNames() const { return joint_names_; }
 
   void update(const std::vector<double> &velocities);
 

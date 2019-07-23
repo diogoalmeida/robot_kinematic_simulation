@@ -25,7 +25,6 @@ class NodeSimulation
   ros::Subscriber command_sub_;
   ros::ServiceServer reset_server_;
   std::vector<double> joint_velocities_;
-  std::vector<std::string> joint_names_;
   double compute_rate_;
   KinematicSimulation sim_;
 

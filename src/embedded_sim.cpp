@@ -18,12 +18,6 @@ bool EmbeddedSimulator::init()
     return false;
   }
 
-  if (!nh_.getParam("init/joint_names", joint_names_))
-  {
-    ROS_ERROR("Missing init/joint_names parameter");
-    return false;
-  }
-
   if (!nh_.getParam("compute_rate", compute_rate_))
   {
     ROS_ERROR("Missing compute_rate");

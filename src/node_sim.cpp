@@ -11,15 +11,8 @@ NodeSimulation::NodeSimulation() : nh_("~")
 
 bool NodeSimulation::init()
 {
-  std::vector<std::string> names;
   if (!sim_.reset())
   {
-    return false;
-  }
-
-  if (!nh_.getParam("init/joint_names", names))
-  {
-    ROS_ERROR("Missing init/joint_names parameter");
     return false;
   }
 
@@ -28,6 +21,8 @@ bool NodeSimulation::init()
     ROS_ERROR("Missing compute_rate");
     return false;
   }
+
+  joint_velocities_.resize(sim_.getJointNames().size());
 
   reset_server_ =
       nh_.advertiseService("/state_reset", &NodeSimulation::resetSrv, this);
@@ -49,7 +44,7 @@ void NodeSimulation::jointCommandCb(const sensor_msgs::JointStateConstPtr &msg)
 {
   for (unsigned int i = 0; i < msg->name.size(); i++)
   {
-    ptrdiff_t idx = findInVector(joint_names_, msg->name[i]);
+    ptrdiff_t idx = findInVector(sim_.getJointNames(), msg->name[i]);
     if (idx != -1)
     {
       joint_velocities_[idx] = msg->velocity[i];
@@ -63,6 +58,7 @@ void NodeSimulation::exec()
   while (ros::ok())
   {
     sim_.update(joint_velocities_);
+    ros::spinOnce();
     r.sleep();
   }
 }

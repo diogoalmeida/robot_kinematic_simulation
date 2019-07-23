@@ -24,7 +24,6 @@ class EmbeddedSimulator
   ros::ServiceServer reset_server_;
   ros::NodeHandle nh_;
   double compute_rate_, sim_rate_;
-  std::vector<std::string> joint_names_;
   KinematicSimulation sim_;
 
   bool init();

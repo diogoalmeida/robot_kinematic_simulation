@@ -33,7 +33,7 @@ bool KinematicSimulation::init()
     }
   }
 
-  state_pub_ = nh_.advertise<sensor_msgs::JointState>("/robot/joint_states", 1);
+  state_pub_ = nh_.advertise<sensor_msgs::JointState>("/joint_states", 1);
   clock_pub_ = nh_.advertise<rosgraph_msgs::Clock>("/clock", 1);
 
   curr_time_ = 0.0;
@@ -54,11 +54,13 @@ void KinematicSimulation::update(const std::vector<double> &velocities)
 {
   if (velocities.size() != joint_names_.size())
   {
-    ROS_ERROR(
-        "Kinematic simulation got velocity command of incorrect size (%d vs "
-        "%d)",
-        velocities.size(), joint_names_.size());
+    ROS_ERROR_THROTTLE(0.5,
+                       "Kinematic simulation got velocity command of incorrect "
+                       "size (%d vs %d)",
+                       velocities.size(), joint_names_.size());
+    return;
   }
+
   rosgraph_msgs::Clock clock_msg;
   state_ = sensor_msgs::JointState();
 
