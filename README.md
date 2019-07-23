@@ -1,4 +1,4 @@
-Robot Kinematic simulation
+Robot Kinematic simulation [![Build Status](https://travis-ci.org/diogoalmeida/robot_kinematic_simulation.svg?branch=master)](https://travis-ci.org/diogoalmeida/robot_kinematic_simulation)
 ===
 
 This package implements a simple robot manipulator simulation.
