@@ -39,6 +39,8 @@ bool EmbeddedSimulator::resetSrv(std_srvs::Empty::Request &req,
                                  std_srvs::Empty::Response &res)
 {
   bool ret = sim_.reset();
+  sim_.update(std::vector<double>(sim_.getJointNames().size(), 0.0));
+  ros::spinOnce();
   ROS_WARN("Resetting kinematic simulation");
   return ret;
 }
@@ -49,11 +51,13 @@ void EmbeddedSimulator::run()
   sensor_msgs::JointState command;
   ros::AsyncSpinner spinner(4);
   spinner.start();
+  bool ran = false;
 
   while (ros::ok())
   {
     if (controller_->isActive())
     {
+      ran = true;
       command = controller_->updateControl(sim_.getState(),
                                            ros::Duration(1 / sim_rate_));
       std::vector<double> joint_velocities(command.name.size(), 0.0);
@@ -63,6 +67,13 @@ void EmbeddedSimulator::run()
       }
 
       sim_.update(joint_velocities);
+    }
+    else if (ran)  // update time
+    {
+      for (unsigned int i = 0; i < 100; i++)
+      {
+        sim_.update(std::vector<double>(sim_.getJointNames().size(), 0.0));
+      }
     }
 
     ros::WallDuration(1 / compute_rate_).sleep();
