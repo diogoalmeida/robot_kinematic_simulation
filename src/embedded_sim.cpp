@@ -38,10 +38,15 @@ bool EmbeddedSimulator::init()
 bool EmbeddedSimulator::resetSrv(std_srvs::Empty::Request &req,
                                  std_srvs::Empty::Response &res)
 {
-  bool ret = sim_.reset();
-  sim_.update(std::vector<double>(sim_.getJointNames().size(), 0.0));
-  ros::spinOnce();
+  std::lock_guard<std::mutex> guard(sim_mtx_);
   ROS_WARN("Resetting kinematic simulation");
+  bool ret = sim_.reset();
+  for (unsigned int i = 0; i < 100; i++)
+  {
+    sim_.update(std::vector<double>(sim_.getJointNames().size(), 0.0));
+    ros::spinOnce();
+    ros::WallDuration(0.01).sleep();
+  }
   return ret;
 }
 
@@ -55,24 +60,28 @@ void EmbeddedSimulator::run()
 
   while (ros::ok())
   {
-    if (controller_->isActive())
     {
-      ran = true;
-      command = controller_->updateControl(sim_.getState(),
-                                           ros::Duration(1 / sim_rate_));
-      std::vector<double> joint_velocities(command.name.size(), 0.0);
-      for (unsigned int i = 0; i < command.name.size(); i++)
-      {
-        joint_velocities[i] = command.velocity[i];
-      }
+      std::lock_guard<std::mutex> guard(sim_mtx_);
 
-      sim_.update(joint_velocities);
-    }
-    else if (ran)  // update time
-    {
-      for (unsigned int i = 0; i < 100; i++)
+      if (controller_->isActive())
       {
-        sim_.update(std::vector<double>(sim_.getJointNames().size(), 0.0));
+        ran = true;
+        command = controller_->updateControl(sim_.getState(),
+                                             ros::Duration(1 / sim_rate_));
+        std::vector<double> joint_velocities(command.name.size(), 0.0);
+        for (unsigned int i = 0; i < command.name.size(); i++)
+        {
+          joint_velocities[i] = command.velocity[i];
+        }
+
+        sim_.update(joint_velocities);
+      }
+      else if (ran)  // update time
+      {
+        for (unsigned int i = 0; i < 100; i++)
+        {
+          sim_.update(std::vector<double>(sim_.getJointNames().size(), 0.0));
+        }
       }
     }
 

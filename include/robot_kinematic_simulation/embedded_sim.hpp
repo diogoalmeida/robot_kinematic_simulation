@@ -5,6 +5,7 @@
 #include <std_srvs/Empty.h>
 #include <chrono>
 #include <generic_control_toolbox/controller_template.hpp>
+#include <mutex>
 #include <robot_kinematic_simulation/kinematic_simulation.hpp>
 #include <thread>
 
@@ -25,6 +26,7 @@ class EmbeddedSimulator
   ros::NodeHandle nh_;
   double compute_rate_, sim_rate_;
   KinematicSimulation sim_;
+  std::mutex sim_mtx_;
 
   bool init();
 
